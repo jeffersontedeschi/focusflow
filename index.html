@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocusFlow - Timer Pomodoro</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .timer-card {
+            grid-column: 1 / -1;
+            text-align: center;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .mode-btn {
+            padding: 0.8rem 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .mode-btn:hover, .mode-btn.active {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+        }
+
+        .timer-display {
+            width: 300px;
+            height: 300px;
+            margin: 2rem auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .timer-display.running {
+            border-color: #4CAF50;
+            box-shadow: 0 0 30px rgba(76, 175, 80, 0.3);
+        }
+
+        .timer-text {
+            font-size: 3rem;
+            font-weight: 700;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 5px;
+            background: #4CAF50;
+            transition: width 1s linear;
+            border-radius: 0 0 25px 25px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin: 2rem 0;
+        }
+
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        .audio-controls {
+            margin: 2rem 0;
+        }
+
+        .audio-tracks {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .track-btn {
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .track-btn:hover, .track-btn.active {
+            background: rgba(78, 205, 196, 0.3);
+            border-color: #4ECDCC;
+            transform: translateY(-2px);
+        }
+
+        .task-form {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .task-input {
+            flex: 1;
+            padding: 0.8rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .task-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .add-btn {
+            padding: 0.8rem 1.2rem;
+            background: #4CAF50;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .add-btn:hover {
+            background: #45a049;
+            transform: translateY(-1px);
+        }
+
+        .task-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.8rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            margin-bottom: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .task-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .task-item.completed {
+            opacity: 0.6;
+            text-decoration: line-through;
+        }
+
+        .task-checkbox {
+            margin-right: 0.8rem;
+            cursor: pointer;
+        }
+
+        .delete-btn {
+            background: #f44336;
+            border: none;
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            background: #da190b;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #4ECDCC;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+        }
+
+        .volume-slider {
+            flex: 1;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        h2 {
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        h3 {
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .youtube-player {
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Timer -->
+        <div class="card timer-card">
+            <h2><i class="fas fa-clock"></i> Timer Pomodoro</h2>
+            
+            <div class="mode-selector">
+                <button class="mode-btn active" data-mode="work">
+                    <i class="fas fa-briefcase"></i> Trabalho (25min)
+                </button>
+                <button class="mode-btn" data-mode="shortBreak">
+                    <i class="fas fa-coffee"></i> Pausa (5min)
+                </button>
+                <button class="mode-btn" data-mode="longBreak">
+                    <i class="fas fa-couch"></i> Pausa Longa (15min)
+                </button>
+            </div>
+
+            <div class="timer-display" id="timerDisplay">
+                <div class="timer-text" id="timerText">25:00</div>
+                <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+            </div>
+
+            <div class="controls">
+                <button class="control-btn" id="playPauseBtn">
+                    <i class="fas fa-play"></i>
+                </button>
+                <button class="control-btn" id="resetBtn">
+                    <i class="fas fa-redo"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Audio -->
+        <div class="card">
+            <h3><i class="fas fa-music"></i> Música Lo-fi</h3>
+            
+            <div class="audio-tracks">
+                <button class="track-btn" data-track="rain">
+                    <i class="fas fa-cloud-rain"></i><br>Chuva
+                </button>
+                <button class="track-btn" data-track="forest">
+                    <i class="fas fa-tree"></i><br>Floresta
+                </button>
+                <button class="track-btn" data-track="ocean">
+                    <i class="fas fa-water"></i><br>Oceano
+                </button>
+                <button class="track-btn" data-track="cafe">
+                    <i class="fas fa-mug-hot"></i><br>Café
+                </button>
+            </div>
+
+            <div class="volume-control">
+                <i class="fas fa-volume-down"></i>
+                <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="50">
+                <i class="fas fa-volume-up"></i>
+            </div>
+        </div>
+
+        <!-- Tasks -->
+        <div class="card">
+            <h3><i class="fas fa-tasks"></i> Tarefas <span id="taskCounter">(0/0)</span></h3>
+            
+            <div class="task-form">
+                <input type="text" class="task-input" id="taskInput" placeholder="Adicionar nova tarefa...">
+                <button class="add-btn" id="addTaskBtn">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+
+            <div class="task-list" id="taskList"></div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="card">
+            <h3><i class="fas fa-chart-bar"></i> Estatísticas</h3>
+            
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number" id="sessionsCount">0</div>
+                    <div class="stat-label">Sessões</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="totalTime">0h</div>
+                    <div class="stat-label">Tempo Total</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="tasksCompleted">0</div>
+                    <div class="stat-label">Tarefas</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="currentStreak">0</div>
+                    <div class="stat-label">Sequência</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- YouTube Player (Hidden) -->
+    <div id="youtube-player" class="youtube-player"></div>
+
+    <!-- YouTube API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+
+    <script>
+        // App State
+        let currentMode = 'work';
+        let timeRemaining = 25 * 60; // 25 minutes in seconds
+        let isRunning = false;
+        let timer = null;
+        let currentTrack = null;
+        let player = null;
+        
+        // Timer durations
+        const durations = {
+            work: 25 * 60,
+            shortBreak: 5 * 60,
+            longBreak: 15 * 60
+        };
+
+        // YouTube tracks
+        const tracks = {
+            rain: 'jfKfPfyJRdk', // lofi rain
+            forest: 'lTRiuFIWV54', // forest ambience
+            ocean: '6p0DAz_30qQ', // ocean waves
+            cafe: 'Dx5qFachd3A'  // coffee shop
+        };
+
+        // Load saved data
+        function loadData() {
+            const tasks = JSON.parse(localStorage.getItem('focusflow-tasks') || '[]');
+            const stats = JSON.parse(localStorage.getItem('focusflow-stats') || '{"sessions":0,"totalTime":0,"tasksCompleted":0,"streak":0}');
+            
+            renderTasks(tasks);
+            updateStats(stats);
+        }
+
+        // Save data
+        function saveData(key, data) {
+            localStorage.setItem(`focusflow-${key}`, JSON.stringify(data));
+        }
+
+        // Timer functions
+        function startTimer() {
+            if (isRunning) return;
+            
+            isRunning = true;
+            document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-pause"></i>';
+            document.getElementById('timerDisplay').classList.add('running');
+            
+            // Start music if track selected
+            if (currentTrack && player) {
+                player.playVideo();
+            }
+            
+            timer = setInterval(() => {
+                timeRemaining--;
+                updateDisplay();
+                
+                if (timeRemaining <= 0) {
+                    completeSession();
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            if (!isRunning) return;
+            
+            isRunning = false;
+            clearInterval(timer);
+            document.getElementById('playPauseBtn').innerHTML = '<i class="fas fa-play"></i>';
+            document.getElementById('timerDisplay').classList.remove('running');
+            
+            // Pause music
+            if (player) {
+                player.pauseVideo();
+            }
+        }
+
+        function resetTimer() {
+            pauseTimer();
+            timeRemaining = durations[currentMode];
+            updateDisplay();
+        }
+
+        function completeSession() {
+            pauseTimer();
+            
+            // Update stats
+            const stats = JSON.parse(localStorage.getItem('focusflow-stats') || '{"sessions":0,"totalTime":0,"tasksCompleted":0,"streak":0}');
+            stats.sessions++;
+            stats.totalTime += durations[currentMode] / 60; // in minutes
+            stats.streak++;
+            
+            saveData('stats', stats);
+            updateStats(stats);
+            
+            // Show notification
+            if (Notification.permission === 'granted') {
+                new Notification('Sessão Concluída!', {
+                    body: currentMode === 'work' ? 'Hora de fazer uma pausa!' : 'Hora de voltar ao trabalho!',
+                    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>'
+                });
+            }
+            
+            // Auto-switch mode
+            if (currentMode === 'work') {
+                setMode('shortBreak');
+            } else {
+                setMode('work');
+            }
+        }
+
+        function updateDisplay() {
+            const minutes = Math.floor(timeRemaining / 60);
+            const seconds = timeRemaining % 60;
+            document.getElementById('timerText').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            const totalTime = durations[currentMode];
+            const progress = ((totalTime - timeRemaining) / totalTime) * 100;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            timeRemaining = durations[mode];
+            pauseTimer();
+            updateDisplay();
+            
+            // Update UI
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+        }
+
+        // YouTube Player
+        function onYouTubeIframeAPIReady() {
+            // API ready
+        }
+
+        function createPlayer(videoId) {
+            if (player) {
+                player.destroy();
+            }
+            
+            player = new YT.Player('youtube-player', {
+                height: '1',
+                width: '1',
+                videoId: videoId,
+                playerVars: {
+                    autoplay: 0,
+                    controls: 0,
+                    loop: 1,
+                    playlist: videoId
+                },
+                events: {
+                    onReady: (event) => {
+                        const volume = document.getElementById('volumeSlider').value;
+                        event.target.setVolume(volume);
+                    }
+                }
+            });
+        }
+
+        // Tasks
+        function addTask() {
+            const input = document.getElementById('taskInput');
+            const text = input.value.trim();
+            
+            if (!text) return;
+            
+            const tasks = JSON.parse(localStorage.getItem('focusflow-tasks') || '[]');
+            tasks.push({
+                id: Date.now(),
+                text: text,
+                completed: false
+            });
+            
+            saveData('tasks', tasks);
+            renderTasks(tasks);
+            input.value = '';
+        }
+
+        function toggleTask(id) {
+            const tasks = JSON.parse(localStorage.getItem('focusflow-tasks') || '[]');
+            const task = tasks.find(t => t.id === id);
+            
+            if (task) {
+                task.completed = !task.completed;
+                
+                // Update stats if completed
+                if (task.completed) {
+                    const stats = JSON.parse(localStorage.getItem('focusflow-stats') || '{"sessions":0,"totalTime":0,"tasksCompleted":0,"streak":0}');
+                    stats.tasksCompleted++;
+                    saveData('stats', stats);
+                    updateStats(stats);
+                }
+                
+                saveData('tasks', tasks);
+                renderTasks(tasks);
+            }
+        }
+
+        function deleteTask(id) {
+            const tasks = JSON.parse(localStorage.getItem('focusflow-tasks') || '[]');
+            const filteredTasks = tasks.filter(t => t.id !== id);
+            
+            saveData('tasks', filteredTasks);
+            renderTasks(filteredTasks);
+        }
+
+        function renderTasks(tasks) {
+            const list = document.getElementById('taskList');
+            const completed = tasks.filter(t => t.completed).length;
+            
+            document.getElementById('taskCounter').textContent = `(${completed}/${tasks.length})`;
+            
+            list.innerHTML = tasks.map(task => `
+                <div class="task-item ${task.completed ? 'completed' : ''}">
+                    <label style="display: flex; align-items: center; cursor: pointer; flex: 1;">
+                        <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} 
+                               onchange="toggleTask(${task.id})">
+                        ${task.text}
+                    </label>
+                    <button class="delete-btn" onclick="deleteTask(${task.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Statistics
+        function updateStats(stats) {
+            document.getElementById('sessionsCount').textContent = stats.sessions || 0;
+            document.getElementById('totalTime').textContent = Math.floor((stats.totalTime || 0) / 60) + 'h';
+            document.getElementById('tasksCompleted').textContent = stats.tasksCompleted || 0;
+            document.getElementById('currentStreak').textContent = stats.streak || 0;
+        }
+
+        // Event Listeners
+        document.getElementById('playPauseBtn').addEventListener('click', () => {
+            if (isRunning) {
+                pauseTimer();
+            } else {
+                startTimer();
+            }
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', resetTimer);
+
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => setMode(btn.dataset.mode));
+        });
+
+        document.querySelectorAll('.track-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const track = btn.dataset.track;
+                
+                // Update UI
+                document.querySelectorAll('.track-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // Set current track
+                currentTrack = track;
+                
+                // Create player but don't auto-play
+                createPlayer(tracks[track]);
+            });
+        });
+
+        document.getElementById('volumeSlider').addEventListener('input', (e) => {
+            if (player) {
+                player.setVolume(e.target.value);
+            }
+        });
+
+        document.getElementById('addTaskBtn').addEventListener('click', addTask);
+
+        document.getElementById('taskInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addTask();
+            }
+        });
+
+        // Request notification permission
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        // Initialize
+        loadData();
+        updateDisplay();
+    </script>
+</body>
+</html>
